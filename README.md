@@ -7,3 +7,13 @@ This repository is my personal knowledge base, documenting things I learn, explo
 It covers a broad range of topics, from low-level systems programming and operating systems to cybersecurity, ai engineering, networking, distributed systems, and infrastructure engineering.
 
 The goal is not simply to collect information, but to understand how things work, explore the underlying principles, experiment with practical implementations, and document the findings in a structured and accessible way.
+
+---
+
+## Operating Systems Concepts
+
+Technical notes and practical explorations of operating system fundamentals, synchronization mechanisms, and concurrent programming.
+
+| Topic | Description |
+|---|---|
+| [Mutex and Semaphores](operating-systems-concepts/mutex-and-semaphores.md) | Understanding mutual exclusion, semaphore mechanisms, thread synchronization, and race conditions through practical C examples. |
