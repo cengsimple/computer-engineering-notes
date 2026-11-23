@@ -17,3 +17,4 @@ Technical notes and practical explorations of operating system fundamentals, syn
 | Topic | Description |
 |---|---|
 | [Mutex and Semaphores](operating-systems-concepts/mutex-and-semaphores.md) | Understanding mutual exclusion, semaphore mechanisms, thread synchronization, and race conditions through practical C examples. |
+| [What is epoll in Linux?](operating-systems-concepts/what-is-epoll-in-linux.md) | Deep dive into Linux `epoll` I/O multiplexing, its kernel architecture (Red-Black Tree and Ready List), Level-Triggered vs. Edge-Triggered modes, and practical C server implementations. |
