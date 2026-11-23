@@ -24,34 +24,22 @@
 
 ## Introduction
 
-In concurrent programming, multiple threads may execute simultaneously and attempt to access shared resources, such as memory locations, files, data structures, or hardware resources.
+In concurrent programming, multiple threads often execute simultaneously and attempt to access shared resources such as memory locations, files, data structures, or hardware components. When these threads read and modify shared data without proper coordination, race conditions can occur, leading to inconsistent states, unexpected program behavior, and bugs that are notoriously difficult to reproduce. To prevent these issues, operating systems and programming environments provide synchronization primitives designed to regulate concurrent execution and safely manage access to shared resources.
 
-When multiple threads access and modify shared data without proper synchronization, race conditions can occur. These conditions may lead to inconsistent data, unexpected behavior, and difficult-to-reproduce bugs.
+Among these synchronization primitives, two of the most fundamental mechanisms are **Mutex (Mutual Exclusion)** and **Semaphore**. Although both are widely used in concurrent programming to manage resource access, they serve distinct purposes and solve different synchronization problems:
 
-Operating systems and programming environments provide synchronization primitives to coordinate concurrent execution and control access to shared resources.
+- **Mutex:** Provides exclusive access to a shared resource, ensuring that only a single thread can own the lock and access the critical section at any given time.
+- **Semaphore:** Controls access to one or more instances of a resource through an internal counter that represents the number of available permits.
 
-Two fundamental synchronization mechanisms are **Mutex (Mutual Exclusion)** and **Semaphore**.
-
-Although both are used in concurrent programming, they solve different problems:
-
-- **Mutex:** Provides exclusive access to a shared resource. Only one thread can own the mutex at a time.
-- **Semaphore:** Controls access through a counter representing the number of available permits or resources.
-
-Understanding the distinction between these mechanisms is essential when designing concurrent applications and operating system components.
+Understanding the core differences between these two mechanisms is essential when designing reliable concurrent applications and robust operating system components.
 
 ---
 
 ## Mutex (Mutual Exclusion)
 
-A mutex is a synchronization primitive used to ensure that only one thread at a time can access a protected critical section.
+A mutex is a synchronization primitive designed to ensure that only one thread at a time can access a protected critical section. In concurrent programming, shared resources or variables are frequently accessed by multiple threads, and if they are modified simultaneously without proper coordination, race conditions can easily occur. A mutex prevents this issue by introducing a strict locking mechanism that enforces exclusive access.
 
-In concurrent programming, a shared resource or shared variable may be accessed by multiple threads. If multiple threads modify the same resource simultaneously without synchronization, race conditions can occur.
-
-A mutex prevents this by introducing a locking mechanism.
-
-When a thread wants to access a protected resource, it must first acquire the mutex. If the mutex is already locked by another thread, the requesting thread must wait until the mutex becomes available.
-
-Once the thread finishes its operation, it releases the mutex, allowing another waiting thread to acquire it.
+When a thread intends to access a protected resource, it must first acquire the mutex lock. If the mutex is already held by another thread, the requesting thread is blocked and must wait until the lock becomes available. Once the owning thread completes its operation within the critical section, it releases the mutex, thereby allowing one of the waiting threads to acquire it and proceed safely.
 
 ### How It Works
 
@@ -69,15 +57,9 @@ This guarantees that the protected critical section is accessed by only one thre
 
 ### Ownership
 
-One of the most important characteristics of a mutex is **ownership**.
+One of the most important characteristics of a mutex is **ownership**, meaning that a mutex always has a specific owner: the thread that successfully acquired it. Under this model, the exact thread that locks the mutex is solely responsible for unlocking it once it finishes executing its critical section. 
 
-A mutex has an owner: the thread that successfully acquired it.
-
-The thread that locks a mutex is responsible for unlocking it after completing its critical section.
-
-This ownership model distinguishes a mutex from a semaphore.
-
-A mutex is not simply a counter or a resource quota. It represents exclusive ownership of a protected section.
+This strict ownership mechanism fundamentally distinguishes a mutex from a semaphore. Rather than functioning merely as a counter or a resource quota, a mutex represents exclusive ownership over a protected section of code or data.
 
 ### Mutex in C
 
@@ -220,13 +202,9 @@ Some operating systems and mutex implementations support **Priority Inheritance*
 
 ## Semaphore
 
-A semaphore is a synchronization primitive that uses an integer counter to control access to a resource or coordinate execution between threads.
+A semaphore is a synchronization primitive that uses an internal integer counter to control access to shared resources or coordinate execution between threads. Unlike a mutex, a counting semaphore does not enforce ownership semantics, meaning that any thread with access to the semaphore can invoke a `sem_post()` operation to increment its counter, regardless of whether it was the thread that previously called `sem_wait()`.
 
-Unlike a mutex, a counting semaphore does not have ownership semantics.
-
-Any thread that has access to the semaphore can perform a `sem_post()` operation to increment its counter. It does not have to be the thread that previously called `sem_wait()`.
-
-A semaphore is particularly useful when multiple threads are allowed to access a limited number of resources simultaneously.
+Because of this counter-based design, a semaphore is particularly useful in scenarios where multiple threads are permitted to concurrently access a limited pool of identical resources.
 
 ### How It Works
 
@@ -247,30 +225,18 @@ This is the fundamental idea behind a counting semaphore.
 
 ### Binary Semaphore
 
-A binary semaphore has a counter that is typically restricted to the values 0 and 1.
+A binary semaphore has a counter typically restricted to the values `0` and `1`, making it well-suited for signaling and task synchronization between threads—such as allowing one thread to notify another that a specific operation has completed. 
 
-It can be used for signaling and synchronization between threads.
-
-For example, one thread can notify another thread that a particular operation or task has completed.
-
-A binary semaphore is not equivalent to a mutex, even though both may involve a binary state.
-
-The important distinction is ownership: a mutex has an owner, whereas a semaphore does not.
+Despite both mechanisms involving a binary state, a binary semaphore is not equivalent to a mutex. The fundamental distinction lies in ownership: a mutex is strictly owned by the thread that locks it, whereas a binary semaphore lacks ownership semantics entirely.
 
 ### Counting Semaphore
 
-A counting semaphore allows its counter to represent multiple available permits.
+A counting semaphore allows its internal counter to represent multiple available permits, where the current value indicates how many threads or operations can acquire a permit immediately without waiting. Access is managed through two primary operations, both of which are guaranteed to be performed atomically by the underlying synchronization mechanism:
 
-Its value indicates how many operations can acquire a permit without waiting.
+- `sem_wait()`: Decrements the semaphore counter; if no permits are currently available (i.e., the counter is zero), the calling thread blocks until another thread releases a permit.
+- `sem_post()`: Increments the semaphore counter and, if any threads are currently blocked waiting on the semaphore, wakes one of them up to proceed.
 
-The basic operations are:
-
-- `sem_wait()`: Decrements the semaphore counter. If no permits are available, the calling thread blocks until one becomes available.
-- `sem_post()`: Increments the semaphore counter and may wake a waiting thread.
-
-The operations are performed atomically by the synchronization mechanism.
-
-For a semaphore initialized with a value of 3:
+To illustrate how this works in practice, consider a semaphore initialized with a value of `3`:
 
 | Operation | Counter | Behavior |
 |---|---:|---|
@@ -282,7 +248,7 @@ For a semaphore initialized with a value of 3:
 | Another thread calls post | 1 | Releases a permit |
 | Thread 4 proceeds | 0 | Acquires the available permit |
 
-This mechanism ensures that no more than three threads can hold permits simultaneously, provided every acquisition is correctly paired with a release.
+Through this atomic counter-and-blocking cycle, the mechanism guarantees that no more than three threads can hold permits simultaneously, provided that every permit acquisition is properly paired with a corresponding release.
 
 ### Semaphore in C
 
@@ -390,27 +356,19 @@ Please review the comprasion picture below about mutex and semaphore.
 
 **1. Ownership**
 
-A mutex has an ownership model. The thread that acquires the mutex is responsible for releasing it.
-
-A semaphore has no ownership model. Any thread can increment its counter using `sem_post()`.
+A mutex enforces a strict ownership model, meaning that the specific thread that acquires the lock is solely responsible for releasing it upon exiting the critical section. In contrast, a semaphore has no concept of ownership, allowing any thread with access to the semaphore to increment its counter using `sem_post()` regardless of which thread originally performed the wait operation.
 
 **2. Resource Management**
 
-A mutex is designed to protect a critical section from concurrent access.
-
-A counting semaphore is designed to manage a limited number of concurrent operations or available resources.
+While a mutex is specifically designed to protect a shared critical section from concurrent access by enforcing exclusivity, a counting semaphore is tailored to manage access to a finite pool of identical resources or regulate a limited number of concurrent operations.
 
 **3. Synchronization**
 
-Mutexes primarily provide mutual exclusion.
-
-Semaphores can also be used for signaling between threads, such as notifying a consumer that data is available.
+Mutexes primarily focus on providing mutual exclusion to prevent race conditions on shared data. Semaphores, however, extend beyond simple locking and are frequently used for cross-thread signaling, such as allowing a producer thread to notify a consumer thread that new data has become available for processing.
 
 **4. Concurrency Limits**
 
-A mutex allows only one thread to own the protected lock at a time.
-
-A counting semaphore initialized with N permits can allow up to N threads to acquire permits simultaneously.
+A mutex restricts concurrency strictly to a single thread, allowing only one thread to own the protected lock at any given moment. Conversely, a counting semaphore initialized with `N` permits provides controlled concurrency by allowing up to `N` threads to acquire permits and execute simultaneously before subsequent threads are forced to block.
 
 ---
 
@@ -454,21 +412,15 @@ Common examples:
 
 ## Conclusion
 
-Mutexes and semaphores are fundamental building blocks of concurrent programming.
+Mutexes and semaphores are fundamental building blocks of concurrent programming. Although both primitives can block threads and coordinate execution flow, they are designed for fundamentally different use cases: a mutex is the right choice when a shared resource or critical section must be accessed exclusively by a single thread at a time, whereas a semaphore is better suited for managing access to a limited pool of resources, bounding concurrency, or signaling events between threads.
 
-Although they can both block threads and coordinate execution, they serve different purposes.
-
-A mutex is the appropriate choice when a shared resource must be accessed exclusively by one thread at a time.
-
-A semaphore is the appropriate choice when managing a limited number of resources, controlling concurrency, or signaling between threads.
-
-The key distinction is simple:
+In short, the core distinction comes down to their underlying abstractions:
 
 **Mutex = Ownership and Mutual Exclusion**
 
 **Semaphore = Counter, Permits and Signaling**
 
-Choosing the correct synchronization primitive is essential for building reliable, predictable, and efficient concurrent systems.
+Selecting the right synchronization mechanism for each scenario is critical to building reliable, predictable, and efficient concurrent systems.
 
 ---
 
